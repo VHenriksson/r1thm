@@ -3,7 +3,7 @@ use pest_derive::Parser;
 use std::collections::HashMap;
 
 use crate::r1cs_system::R1CSSystem;
-use crate::r1cs_constraint::{R1CSConstraint, Constant, ConstantMultiplication, Sum, Multiplication, Final};
+use crate::r1cs_constraint::{R1CSConstraint, R1CSSumConstraint};
 
 
 
@@ -80,15 +80,15 @@ impl ParseTreeVisitor {
                 if exponent % 2 == 0 {
                     exponent /= 2;
                     if exponent == 1 {
-                        self.r1cs_system.add_constraint(R1CSConstraint::<Multiplication>::new(variable_position, variable_position, current_exponent_variable));
+                        self.r1cs_system.add_constraint(R1CSConstraint::new_multiplication_constraint(variable_position, variable_position, current_exponent_variable));
                     } else {
                         let new_exponent_variable = self.r1cs_system.add_variable();
-                        self.r1cs_system.add_constraint(R1CSConstraint::<Multiplication>::new(new_exponent_variable, new_exponent_variable, current_exponent_variable));
+                        self.r1cs_system.add_constraint(R1CSConstraint::new_multiplication_constraint(new_exponent_variable, new_exponent_variable, current_exponent_variable));
                         current_exponent_variable = new_exponent_variable;
                     }
                 } else {
                     let new_exponent_variable = self.r1cs_system.add_variable();
-                    self.r1cs_system.add_constraint(R1CSConstraint::<Multiplication>::new(variable_position, new_exponent_variable, current_exponent_variable));
+                    self.r1cs_system.add_constraint(R1CSConstraint::new_multiplication_constraint(variable_position, new_exponent_variable, current_exponent_variable));
                     exponent -= 1;
                     current_exponent_variable = new_exponent_variable;
                 }
@@ -141,7 +141,7 @@ impl ParseTreeVisitor {
             println!("Back through cfactor");
             if variable_constant != 1 {
                 let cfactor_variable = s.r1cs_system.add_variable();
-                s.r1cs_system.add_constraint(R1CSConstraint::<ConstantMultiplication>::new(variable_constant, variable_position, cfactor_variable));
+                s.r1cs_system.add_constraint(R1CSConstraint::new_constant_multiplication_constraint(variable_constant, variable_position, cfactor_variable));
                 cfactor_variable
             } else {
                 variable_position
@@ -197,7 +197,7 @@ impl ParseTreeVisitor {
                 println!("Current variable: {}", current_variable);
                 for position in variable_positions.iter().skip(1) {
                     let product_variable = s.r1cs_system.add_variable();
-                    s.r1cs_system.add_constraint(R1CSConstraint::<Multiplication>::new(current_variable, *position, product_variable));
+                    s.r1cs_system.add_constraint(R1CSConstraint::new_multiplication_constraint(current_variable, *position, product_variable));
                     current_variable = product_variable;
                 }
                 current_variable
@@ -220,7 +220,7 @@ impl ParseTreeVisitor {
                     Rule::constant => {
                         let constant = pair.as_str().parse().expect("Not a number");
                         variable_position = s.r1cs_system.add_variable();
-                        s.r1cs_system.add_constraint(R1CSConstraint::<Constant>::new(constant, variable_position));
+                        s.r1cs_system.add_constraint(R1CSConstraint::new_constant_constraint(constant, variable_position));
                     }
                     _ => {
                         println!("Unhandled term: {:?}", pair.as_rule());
@@ -253,7 +253,7 @@ impl ParseTreeVisitor {
     fn visit_expression(&mut self, expression_pair: pest::iterators::Pair<Rule>) -> usize {
         println!("In expression");
         self.cache_wrapper(|s, input_pair| {
-            let mut new_constraint = R1CSConstraint::<Sum>::new();
+            let mut new_constraint = R1CSSumConstraint::new();
             let mut should_create_new_variable = false;
             let mut fallthrough_variable = 0;
             for pair in input_pair.into_inner() {
@@ -281,7 +281,7 @@ impl ParseTreeVisitor {
             if should_create_new_variable {
                 let expression_variable = s.r1cs_system.add_variable();
                 new_constraint.set_right_hand_side(expression_variable);
-                s.r1cs_system.add_constraint(new_constraint);
+                s.r1cs_system.add_constraint(new_constraint.to_r1cs_constraint());
                 expression_variable
             } else {
                 fallthrough_variable
@@ -292,7 +292,7 @@ impl ParseTreeVisitor {
     fn generate_r1cs(mut self, expression_pair: pest::iterators::Pair<Rule>, expected_result : i64) -> R1CSSystem {
         // Placeholder for generating the R1CS system from the visited nodes
         let variable_position = self.visit_expression(expression_pair);
-        self.r1cs_system.add_constraint(R1CSConstraint::<Final>::new(expected_result, variable_position));
+        self.r1cs_system.add_constraint(R1CSConstraint::new_final_constraint(expected_result, variable_position));
         self.r1cs_system
     }
 }

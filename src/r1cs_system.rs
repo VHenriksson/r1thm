@@ -1,9 +1,9 @@
 use std::collections::HashMap;
-use crate::r1cs_constraint::{R1CSConstraint, ReadOnly};
+use crate::r1cs_constraint::R1CSConstraint;
 
 pub struct R1CSSystem {
     variables: HashMap<String, usize>,
-    constraints: Vec<R1CSConstraint<ReadOnly>>,
+    constraints: Vec<R1CSConstraint>,
     next_index: usize,
 }
 
@@ -24,9 +24,8 @@ impl R1CSSystem {
         self.variables.len()
     }
 
-    pub fn add_constraint<T>(&mut self, constraint: R1CSConstraint<T>)
-    where R1CSConstraint<ReadOnly>: From<R1CSConstraint<T>> {
-        self.constraints.push(R1CSConstraint::<ReadOnly>::from(constraint));
+    pub fn add_constraint(&mut self, constraint: R1CSConstraint) {
+        self.constraints.push(constraint);
     }
 
     pub fn add_named_variable(&mut self, name: String) -> usize {
@@ -56,7 +55,7 @@ impl R1CSSystem {
         }
     }
 
-    pub fn find_matching_constraint(&self, expected_a: &HashMap<usize, i64>, expected_b: &HashMap<usize, i64>, expected_c: Option<&HashMap<usize, i64>>,) -> Option<&R1CSConstraint<ReadOnly>> {
+    pub fn find_matching_constraint(&self, expected_a: &HashMap<usize, i64>, expected_b: &HashMap<usize, i64>, expected_c: Option<&HashMap<usize, i64>>,) -> Option<&R1CSConstraint> {
         self.constraints.iter().find(|constraint| {
             if expected_c.is_none() {
                 constraint.lhs_matches(expected_a, expected_b)

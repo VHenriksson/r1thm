@@ -6,22 +6,20 @@ use std::collections::HashMap;
 /// use sparse matrices, we represent each entry as a column index and its corresponding value.
 /// Since only the relation between the rows in the three matrices is important, we do not need
 /// to store information about the row itself.
-pub struct R1CSConstraint<Variant> {
+pub struct R1CSConstraint {
     a: HashMap<usize, i64>,
     b: HashMap<usize, i64>,
     c: HashMap<usize, i64>,
-    _marker: PhantomData<Variant>
 }
 
-pub struct ReadOnly;
-pub struct Sum;
-pub struct Final;
-pub struct Multiplication;
-pub struct ConstantMultiplication;
-pub struct Constant;
+pub struct R1CSSumConstraint {
+    a: HashMap<usize, i64>,
+    b: HashMap<usize, i64>,
+    c: HashMap<usize, i64>,
+}
 
 
-impl<T> R1CSConstraint<T> {
+impl R1CSConstraint {
     pub fn lhs_matches(&self, other_a: &HashMap<usize,i64>, other_b: &HashMap<usize,i64>) -> bool {
         self.a == *other_a && self.b == *other_b
     }
@@ -64,107 +62,53 @@ impl<T> R1CSConstraint<T> {
         }
         pairs
     }
-}
 
-
-impl R1CSConstraint<Final> {
-    pub fn new(expected_result : i64, variable_position : usize) -> Self {
-        R1CSConstraint::<Final> {
-            a: HashMap::from([(0,1)]),
-            b: HashMap::from([(variable_position, 1)]),
-            c: HashMap::from([(0, expected_result)]),
-            _marker: PhantomData::<Final>
-        }
-    }
-}
-
-impl From<R1CSConstraint<Final>> for R1CSConstraint<ReadOnly> {
-    fn from(r1cs : R1CSConstraint<Final>) -> Self {
-        R1CSConstraint::<ReadOnly> { a: r1cs.a,
-                         b: r1cs.b,
-                         c: r1cs.c,
-                        _marker: PhantomData::<ReadOnly> }
-    }
-}
-
-impl From<R1CSConstraint<Sum>> for R1CSConstraint<ReadOnly> {
-    fn from(r1cs : R1CSConstraint<Sum>) -> Self {
-        R1CSConstraint::<ReadOnly> { a: r1cs.a,
-                         b: r1cs.b,
-                         c: r1cs.c,
-                        _marker: PhantomData::<ReadOnly> }
-    }
-}
-
-
-impl From<R1CSConstraint<Constant>> for R1CSConstraint<ReadOnly> {
-    fn from(r1cs : R1CSConstraint<Constant>) -> Self {
-        R1CSConstraint::<ReadOnly> { a: r1cs.a,
-                         b: r1cs.b,
-                         c: r1cs.c,
-                        _marker: PhantomData::<ReadOnly> }
-    }
-}
-
-impl R1CSConstraint<Constant> {
-    pub fn new(constant: i64, new_variable: usize) -> Self {
-        R1CSConstraint::<Constant> {
-            a: HashMap::from([(0, 1)]),
-            b: HashMap::from([(0, constant)]),
-            c: HashMap::from([(new_variable, 1)]),
-            _marker: PhantomData::<Constant>
-        }
-    }
-}
-
-impl From<R1CSConstraint<ConstantMultiplication>> for R1CSConstraint<ReadOnly> {
-    fn from(r1cs : R1CSConstraint<ConstantMultiplication>) -> Self {
-        R1CSConstraint::<ReadOnly> { a: r1cs.a,
-                         b: r1cs.b,
-                         c: r1cs.c,
-                        _marker: PhantomData::<ReadOnly> }
-    }
-}
-
-impl From<R1CSConstraint<Multiplication>> for R1CSConstraint<ReadOnly> {
-    fn from(r1cs : R1CSConstraint<Multiplication>) -> Self {
-        R1CSConstraint::<ReadOnly> { a: r1cs.a,
-                         b: r1cs.b,
-                         c: r1cs.c,
-                        _marker: PhantomData::<ReadOnly> }
-    }
-}
-
-impl R1CSConstraint<Multiplication> {
-    pub fn new(variable_a: usize, variable_b: usize, new_variable: usize) -> Self {
-        R1CSConstraint::<Multiplication> {
+    pub fn new_multiplication_constraint(variable_a: usize, variable_b: usize, new_variable: usize) -> Self {
+        R1CSConstraint {
             a: HashMap::from([(variable_a, 1)]),
             b: HashMap::from([(variable_b, 1)]),
             c: HashMap::from([(new_variable, 1)]),
-            _marker: PhantomData::<Multiplication>
         }
     }
-}
 
-impl R1CSConstraint<ConstantMultiplication> {
-    pub fn new(constant: i64, variable: usize, new_variable: usize) -> Self {
-        R1CSConstraint::<ConstantMultiplication> {
+    pub fn new_constant_multiplication_constraint(constant: i64, variable: usize, new_variable: usize) -> Self {
+        R1CSConstraint {
             a: HashMap::from([(0,constant)]),
             b: HashMap::from([(variable, 1)]),
             c: HashMap::from([(new_variable, 1)]),
-            _marker: PhantomData::<ConstantMultiplication>
+        }
+    }
+
+    pub fn new_final_constraint(expected_result : i64, variable_position : usize) -> Self {
+        R1CSConstraint {
+            a: HashMap::from([(0,1)]),
+            b: HashMap::from([(variable_position, 1)]),
+            c: HashMap::from([(0, expected_result)]),
+        }
+    }
+
+    pub fn new_constant_constraint(constant: i64, new_variable: usize) -> Self {
+        R1CSConstraint {
+            a: HashMap::from([(0, 1)]),
+            b: HashMap::from([(0, constant)]),
+            c: HashMap::from([(new_variable, 1)]),
         }
     }
 }
 
 
-impl R1CSConstraint<Sum> {
+
+
+
+
+
+
+impl R1CSSumConstraint {
     pub fn new() -> Self {
-        R1CSConstraint::<Sum> {
+        R1CSSumConstraint {
             a: HashMap::from([(0,1)]),
             b: HashMap::new(),
             c: HashMap::new(),
-            _marker: PhantomData::<Sum>
         }
     }
     pub fn add_to_sum(&mut self, position : usize) {
@@ -177,6 +121,14 @@ impl R1CSConstraint<Sum> {
     
     pub fn set_right_hand_side(&mut self, position : usize) {
         self.c.insert(position, 1);
+    }
+
+    pub fn to_r1cs_constraint(self) -> R1CSConstraint {
+        R1CSConstraint {
+            a: self.a,
+            b: self.b,
+            c: self.c,
+        }
     }
     
 }
