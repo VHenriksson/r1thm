@@ -11,7 +11,9 @@ factor     = { varpow | parenth }
 cfactor    = { (constant ~ "*"? )? ~ factor }
 product    = { cfactor ~ ( factor | "*" ~ cfactor)+ }
 term       = { product | cfactor | constant }
+add_term   = { "+" ~ term}
+sub_term   = { "-" ~ term}
 
 
-parenth    = { ( "(" ~ expression ~ ")" ~ ( "^" ~ exponent )? )+ }
-expression = { term ~ (( "+" | "-" ) ~ term)*}
+parenth    = { ( "(" ~ expression ~ ")" ~ ( "^" ~ exponent )? ) }
+expression = { (term | sub_term) ~ ( add_term | sub_term)*}
