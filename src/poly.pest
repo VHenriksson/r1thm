@@ -1,9 +1,10 @@
 WHITESPACE = _{ " " | "\t" }
 
-number     = @{ "-"? ~ ASCII_DIGIT+ }
+positive_number = @{ ASCII_DIGIT+ }
+number     = @{ "-"?~ ASCII_DIGIT+ }
 variable   = @{ !"a" ~ ASCII_ALPHA ~ ("_" ~ ASCII_DIGIT+)? }
-exponent   = @{ number }
-constant   = { number }
+constant   = @{ number }
+exponent   = @{ positive_number }
 varpow     = { variable ~ ( "^" ~ exponent )? }
 
 
