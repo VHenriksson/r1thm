@@ -1,20 +1,33 @@
+// A grammar for reading a multivariable polynomial given as a string.
+// The grammar may not cover all cases. For example, some may consider
+// "(x + 1)6y" to be a valid polynomial. This is, however, disallowed
+// by this grammar, and should be written as "(x + 1) * 6y" instead.
+
 WHITESPACE = _{ " " | "\t" }
 
 positive_number = @{ ASCII_DIGIT+ }
 number     = @{ "-"?~ ASCII_DIGIT+ }
+
+// Variables starting with the letter 'a' are disallowed,
+// because they are used for printing R1CS variables.
+// This is arbitrary and easily changed.
 variable   = @{ !"a" ~ ASCII_ALPHA ~ ("_" ~ ASCII_DIGIT+)? }
 constant   = @{ number }
 exponent   = @{ positive_number }
+
+// These are simple variables raised to some power,
+// the basic building blocks of the polynomial.
 varpow     = { variable ~ ( "^" ~ exponent )? }
 
-
+// Any expression is built from a combination of terms.
+// Each term is either a constant or a product of factors
+// (where the product can be a single factor).
+// Each factor is either a variable raised to a power or a parenthesized expression.
 factor     = { varpow | parenth }
 cfactor    = { (constant ~ "*"? )? ~ factor }
 product    = { cfactor ~ ( factor | "*" ~ cfactor)* }
 term       = { product | constant }
 add_term   = { "+" ~ term}
 sub_term   = { "-" ~ term}
-
-
 parenth    = { ( "(" ~ expression ~ ")" ~ ( "^" ~ exponent )? ) }
 expression = { (term | sub_term) ~ ( add_term | sub_term)*}
