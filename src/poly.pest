@@ -10,8 +10,8 @@ varpow     = { variable ~ ( "^" ~ exponent )? }
 
 factor     = { varpow | parenth }
 cfactor    = { (constant ~ "*"? )? ~ factor }
-product    = { cfactor ~ ( factor | "*" ~ cfactor)+ }
-term       = { product | cfactor | constant }
+product    = { cfactor ~ ( factor | "*" ~ cfactor)* }
+term       = { product | constant }
 add_term   = { "+" ~ term}
 sub_term   = { "-" ~ term}
 
