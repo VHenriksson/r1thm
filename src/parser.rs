@@ -219,21 +219,13 @@ impl ParseTreeVisitor {
                     }
                 }
             }
-            // If the product is empty, we return the variable position 0,
-            // which is the identity element for multiplication.
-            // However, this should not happen?
-            if variable_positions.len() == 0 {
-                0
-            } else {
-                let mut current_variable = variable_positions[0];
-                println!("Current variable: {}", current_variable);
-                for position in variable_positions.iter().skip(1) {
-                    let product_variable = s.r1cs.add_variable();
-                    s.r1cs.add_constraint(R1CSConstraint::new_multiplication_constraint(current_variable, *position, product_variable));
-                    current_variable = product_variable;
-                }
-                current_variable
+            let mut current_variable = *variable_positions.get(0).expect("Parsed a product without any factors.");
+            for position in variable_positions.iter().skip(1) {
+                let product_variable = s.r1cs.add_variable();
+                s.r1cs.add_constraint(R1CSConstraint::new_multiplication_constraint(current_variable, *position, product_variable));
+                current_variable = product_variable;
             }
+            current_variable
         }, product_pair)
     }
 
