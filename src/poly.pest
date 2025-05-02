@@ -8,10 +8,10 @@ WHITESPACE = _{ " " | "\t" }
 positive_number = @{ ASCII_DIGIT+ }
 number     = @{ "-"?~ ASCII_DIGIT+ }
 
-// Variables starting with the letter 'a' are disallowed,
+// Variables starting with the letter 'u' are disallowed,
 // because they are used for printing R1CS variables.
 // This is arbitrary and easily changed.
-variable   = @{ !"a" ~ ASCII_ALPHA ~ ("_" ~ ASCII_DIGIT+)? }
+variable   = @{ !"u" ~ ASCII_ALPHA ~ ("_" ~ ASCII_DIGIT+)? }
 constant   = @{ number }
 exponent   = @{ positive_number }
 
