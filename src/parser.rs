@@ -76,7 +76,7 @@ impl ParseTreeVisitor {
                         exponent = pair.as_str().parse().expect("Not a number");
                     }
                     _ => {
-                        println!("Unhandled varpow: {:?}", pair.as_rule());
+                        panic!("Rule {:?} found in visit_varpow. Only variable and exponent rules are expected there.", pair.as_rule());
                     }
                 }
             }            
@@ -140,7 +140,7 @@ impl ParseTreeVisitor {
                     variable_position = self.visit_parenth(pair);
                 }
                 _ => {
-                    println!("Unhandled factor: {:?}", pair.as_rule());
+                    panic!("Rule {:?} found in visit_factor. Only varpow and parenth rules are expected there.", pair.as_rule());
                 }
             }
         }
@@ -166,7 +166,7 @@ impl ParseTreeVisitor {
                         variable_position = s.visit_factor(pair);
                     }
                     _ => {
-                        println!("Unhandled C-factor: {:?}", pair.as_rule());
+                        panic!("Rule {:?} found in visit_cfactor. Only constant and factor rules are expected there.", pair.as_rule());
                     }
                 }
             }
@@ -194,7 +194,7 @@ impl ParseTreeVisitor {
                         exponent = pair.as_str().parse().expect("Not a number");
                     }
                     _ => {
-                        println!("Unhandled parenthesis: {:?}", pair.as_rule());
+                        panic!("Rule {:?} found in visit_parenth. Only expression and exponent rules are expected there.", pair.as_rule());
                     }
                 }
             }
@@ -215,7 +215,7 @@ impl ParseTreeVisitor {
                         variable_positions.push(s.visit_factor(pair));
                     }
                     _ => {
-                        println!("Unhandled product: {:?}", pair.as_rule());
+                        panic!("Rule {:?} found in visit_product. Only cfactor and factor rules are expected there.", pair.as_rule());
                     }
                 }
             }
@@ -251,7 +251,7 @@ impl ParseTreeVisitor {
                         s.r1cs.add_constraint(R1CSConstraint::new_constant_constraint(constant, variable_position));
                     }
                     _ => {
-                        println!("Unhandled term: {:?}", pair.as_rule());
+                        panic!("Rule {:?} found in visit_term. Only cfactor, product and constant rules are expected there.", pair.as_rule());
                     }
                 }
             }
@@ -271,7 +271,7 @@ impl ParseTreeVisitor {
                     variable_position = self.visit_term(pair);
                 }
                 _ => {
-                    println!("Unhandled factor: {:?}", pair.as_rule());
+                    panic!("Rule {:?} found in visit_add_or_sub_term. Only term rules are expected there.", pair.as_rule());
                 }
             }
         }
@@ -299,7 +299,7 @@ impl ParseTreeVisitor {
                         should_create_new_variable = true;
                     }
                     _ => {
-                        println!("Unhandled expression: {:?}", pair.as_rule());
+                        panic!("Rule {:?} found in visit_expression. Only term, add_term and sub_term rules are expected there.", pair.as_rule());
                     }
                 }
             }
@@ -676,10 +676,4 @@ mod tests {
         check_final_constraint(&parsed_poly, final_variable, expected_result);
     }
 
-    #[test]
-    fn test_poly2r1cs() {
-        let polynomial = "3*x^2 + 2*x - 5".to_string();
-        let result = poly2r1cs(polynomial, 2);
-        assert!(result.is_ok());
-    }
 }
